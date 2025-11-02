@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador de Cadenas de Markov</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        input, button {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .matrix-input, .vector-input {
+            display: grid;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .matrix-row {
+            display: grid;
+            gap: 10px;
+        }
+
+        .matrix-input input, .vector-input input {
+            text-align: center;
+        }
+
+        #results {
+            margin-top: 40px;
+        }
+
+        .result-section {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+
+        .result-section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+
+        #graph {
+            width: 100%;
+            height: 500px;
+            border: 2px solid #ddd;
+            border-radius: 12px;
+            background: white;
+        }
+
+        .steps-container {
+            margin-top: 30px;
+        }
+
+        .step-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .step-card h3 {
+            color: #764ba2;
+            margin-bottom: 15px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: center;
+            border: 1px solid #ddd;
+        }
+
+        th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 600;
+        }
+
+        td {
+            background: white;
+        }
+
+        tr:hover td {
+            background: #f8f9fa;
+        }
+
+        .error {
+            background: #fee;
+            border: 2px solid #fcc;
+            color: #c33;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔗 Simulador de Cadenas de Markov</h1>
+            <p>Visualiza y calcula la evolución de estados probabilísticos</p>
+        </div>
+
+        <div class="content">
+            <form id="markovForm">
+                <div class="form-group">
+                    <label for="numStates">Número de Estados:</label>
+                    <input type="number" id="numStates" min="2" max="10" value="3" required>
+                    <button type="button" onclick="generateInputs()">Generar Campos</button>
+                </div>
+
+                <div id="dynamicInputs" class="hidden">
+                    <div class="form-group">
+                        <label>Nombres de los Estados:</label>
+                        <div id="stateNames"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Matriz de Transición P (cada columna debe sumar 1):</label>
+                        <div id="matrixInput" class="matrix-input"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Vector de Estado Inicial (debe sumar 1):</label>
+                        <div id="vectorInput" class="vector-input"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="steps">Número de Pasos:</label>
+                        <input type="number" id="steps" min="1" max="100" value="5" required>
+                    </div>
+
+                    <button type="submit">Calcular Cadena de Markov</button>
+                </div>
+            </form>
+
+            <div id="loading" class="loading hidden">
+                <div class="spinner"></div>
+                <p>Calculando...</p>
+            </div>
+
+            <div id="error" class="error hidden"></div>
+
+            <div id="results" class="hidden">
+                <div class="result-section">
+                    <h2>📊 Grafo de Estados</h2>
+                    <div id="graph"></div>
+                </div>
+
+                <div class="result-section">
+                    <h2>📈 Evolución de Estados</h2>
+                    <div id="stepsContainer" class="steps-container"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let network = null;
+
+        function generateInputs() {
+            const numStates = parseInt(document.getElementById('numStates').value);
+            
+            // Generar inputs para nombres
+            const stateNamesDiv = document.getElementById('stateNames');
+            stateNamesDiv.innerHTML = '';
+            for (let i = 0; i < numStates; i++) {
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.id = `state${i}`;
+                input.placeholder = `Estado ${i + 1}`;
+                input.value = `Estado ${i + 1}`;
+                input.required = true;
+                stateNamesDiv.appendChild(input);
+            }
+
+            // Generar matriz
+            const matrixDiv = document.getElementById('matrixInput');
+            matrixDiv.innerHTML = '';
+            for (let i = 0; i < numStates; i++) {
+                const row = document.createElement('div');
+                row.className = 'matrix-row';
+                row.style.gridTemplateColumns = `repeat(${numStates}, 1fr)`;
+                for (let j = 0; j < numStates; j++) {
+                    const input = document.createElement('input');
+                    input.type = 'number';
+                    input.step = '0.01';
+                    input.min = '0';
+                    input.max = '1';
+                    input.id = `matrix${i}${j}`;
+                    input.placeholder = `P[${i},${j}]`;
+                    input.value = i === j ? '0.5' : (0.5 / (numStates - 1)).toFixed(2);
+                    input.required = true;
+                    row.appendChild(input);
+                }
+                matrixDiv.appendChild(row);
+            }
+
+            // Generar vector inicial
+            const vectorDiv = document.getElementById('vectorInput');
+            vectorDiv.innerHTML = '';
+            vectorDiv.style.gridTemplateColumns = `repeat(${numStates}, 1fr)`;
+            for (let i = 0; i < numStates; i++) {
+                const input = document.createElement('input');
+                input.type = 'number';
+                input.step = '0.01';
+                input.min = '0';
+                input.max = '1';
+                input.id = `vector${i}`;
+                input.placeholder = `v[${i}]`;
+                input.value = (1 / numStates).toFixed(2);
+                input.required = true;
+                vectorDiv.appendChild(input);
+            }
+
+            document.getElementById('dynamicInputs').classList.remove('hidden');
+        }
+
+        function drawGraph(stateNames, matrix) {
+            const nodes = stateNames.map((name, i) => ({
+                id: i,
+                label: name,
+                shape: 'circle',
+                size: 30,
+                font: { size: 16, color: 'white' },
+                color: {
+                    background: '#667eea',
+                    border: '#764ba2',
+                    highlight: { background: '#764ba2', border: '#667eea' }
+                }
+            }));
+
+            const edges = [];
+            for (let i = 0; i < matrix.length; i++) {
+                for (let j = 0; j < matrix[i].length; j++) {
+                    if (matrix[i][j] > 0) {
+                        edges.push({
+                            from: j,
+                            to: i,
+                            label: matrix[i][j].toFixed(2),
+                            arrows: 'to',
+                            font: { size: 12, align: 'middle' },
+                            color: { color: '#764ba2', highlight: '#667eea' },
+                            smooth: { type: 'curvedCW', roundness: i === j ? 0.5 : 0.2 }
+                        });
+                    }
+                }
+            }
+
+            const container = document.getElementById('graph');
+            const data = { nodes, edges };
+            const options = {
+                physics: {
+                    enabled: true,
+                    stabilization: { iterations: 200 }
+                },
+                layout: {
+                    randomSeed: 42
+                }
+            };
+
+            if (network) network.destroy();
+            network = new vis.Network(container, data, options);
+        }
+
+        document.getElementById('markovForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const numStates = parseInt(document.getElementById('numStates').value);
+            
+            // Recopilar nombres
+            const stateNames = [];
+            for (let i = 0; i < numStates; i++) {
+                stateNames.push(document.getElementById(`state${i}`).value);
+            }
+
+            // Recopilar matriz
+            const matrix = [];
+            for (let i = 0; i < numStates; i++) {
+                const row = [];
+                for (let j = 0; j < numStates; j++) {
+                    row.push(parseFloat(document.getElementById(`matrix${i}${j}`).value));
+                }
+                matrix.push(row);
+            }
+
+            // Recopilar vector inicial
+            const initialState = [];
+            for (let i = 0; i < numStates; i++) {
+                initialState.push(parseFloat(document.getElementById(`vector${i}`).value));
+            }
+
+            const steps = parseInt(document.getElementById('steps').value);
+
+            // Mostrar loading
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('error').classList.add('hidden');
+            document.getElementById('results').classList.add('hidden');
+
+            try {
+                const response = await fetch('/calculate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        num_states: numStates,
+                        state_names: stateNames,
+                        matrix: matrix,
+                        initial_state: initialState,
+                        steps: steps
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Error en el cálculo');
+                }
+
+                // Dibujar grafo
+                drawGraph(data.state_names, data.matrix);
+
+                // Mostrar resultados paso a paso
+                const stepsContainer = document.getElementById('stepsContainer');
+                stepsContainer.innerHTML = '';
+
+                data.results.forEach(result => {
+                    const card = document.createElement('div');
+                    card.className = 'step-card';
+                    
+                    let tableHTML = `
+                        <h3>Paso ${result.step}</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Estado</th>
+                                    <th>Probabilidad</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+
+                    result.vector_rounded.forEach((prob, i) => {
+                        tableHTML += `
+                            <tr>
+                                <td><strong>${data.state_names[i]}</strong></td>
+                                <td>${prob.toFixed(6)}</td>
+                            </tr>
+                        `;
+                    });
+
+                    tableHTML += `
+                            </tbody>
+                        </table>
+                    `;
+
+                    card.innerHTML = tableHTML;
+                    stepsContainer.appendChild(card);
+                });
+
+                document.getElementById('results').classList.remove('hidden');
+
+            } catch (error) {
+                document.getElementById('error').textContent = error.message;
+                document.getElementById('error').classList.remove('hidden');
+            } finally {
+                document.getElementById('loading').classList.add('hidden');
+            }
+        });
+
+        // Inicializar con 3 estados
+        window.onload = () => generateInputs();
+    </script>
+</body>
+</html>
