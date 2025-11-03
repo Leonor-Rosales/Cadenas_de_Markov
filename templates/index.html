@@ -222,7 +222,7 @@
             <form id="markovForm">
                 <div class="form-group">
                     <label for="numStates">Número de Estados:</label>
-                    <input type="number" id="numStates" min="2" max="10" value="3" required>
+                    <input type="number" id="numStates" min="2" max="10" placeholder="ej. 3" required>
                     <button type="button" onclick="generateInputs()">Generar Campos</button>
                 </div>
 
@@ -244,7 +244,7 @@
 
                     <div class="form-group">
                         <label for="steps">Número de Pasos:</label>
-                        <input type="number" id="steps" min="1" max="100" value="5" required>
+                        <input type="number" id="steps" min="1" max="100" placeholder="ej. 5" required>
                     </div>
 
                     <button type="submit">Calcular Cadena de Markov</button>
@@ -285,8 +285,7 @@
                 const input = document.createElement('input');
                 input.type = 'text';
                 input.id = `state${i}`;
-                input.placeholder = `Estado ${i + 1}`;
-                input.value = `Estado ${i + 1}`;
+                input.placeholder = `ej. Estado ${i + 1}`;
                 input.required = true;
                 stateNamesDiv.appendChild(input);
             }
@@ -305,8 +304,7 @@
                     input.min = '0';
                     input.max = '1';
                     input.id = `matrix${i}${j}`;
-                    input.placeholder = `P[${i},${j}]`;
-                    input.value = i === j ? '0.5' : (0.5 / (numStates - 1)).toFixed(2);
+                    input.placeholder = `ej. 0.${Math.floor(Math.random() * 9) + 1}`;
                     input.required = true;
                     row.appendChild(input);
                 }
@@ -324,8 +322,7 @@
                 input.min = '0';
                 input.max = '1';
                 input.id = `vector${i}`;
-                input.placeholder = `v[${i}]`;
-                input.value = (1 / numStates).toFixed(2);
+                input.placeholder = `ej. 0.${Math.floor(Math.random() * 9) + 1}`;
                 input.required = true;
                 vectorDiv.appendChild(input);
             }
@@ -484,8 +481,10 @@
             }
         });
 
-        // Inicializar con 3 estados
-        window.onload = () => generateInputs();
+        // No inicializar automáticamente
+        window.onload = () => {
+            // Dejar los campos vacíos al cargar
+        };
     </script>
 </body>
 </html>
